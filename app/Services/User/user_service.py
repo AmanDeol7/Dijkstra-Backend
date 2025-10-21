@@ -6,9 +6,11 @@ from sqlmodel import Session
 from Repository.User.user_repository import UserRepository
 from Repository.User.profile_repository import ProfileRepository
 from Repository.User.links_repository import LinksRepository
+from Services.User.location_service import LocationService
 from Entities.UserDTOs.user_entity import CreateUser, ReadUserPersonalDetails, UpdateUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails, UpdateUserPersonalDetails
-from Schema.SQL.Models.models import User, Profile, Links
+from Schema.SQL.Models.models import User, Profile, Links, Location
 from Utils.Exceptions.user_exceptions import GitHubUsernameAlreadyExists, GitHubUsernameNotFound, UserNotFound
+from Entities.UserDTOs.location_entity import UpdateLocation, CreateLocation
 
 
 class UserService:
@@ -16,6 +18,7 @@ class UserService:
         self.repo = UserRepository(session)
         self.profile_repo = ProfileRepository(session)
         self.links_repo = LinksRepository(session)
+        self.location_service = LocationService(session)
         self.session = session
 
     def create_user(self, user_create: CreateUser) -> User:
@@ -318,13 +321,31 @@ class UserService:
             # Links might not exist, continue with None
             pass
         
+        # Get location data if user has a location using SQLModel relationship
+        location_city = None
+        location_state = None
+        location_country = None
+        location_longitude = None
+        location_latitude = None
+        
+        if user.location_rel:
+            location_city = user.location_rel.city
+            location_state = user.location_rel.state
+            location_country = user.location_rel.country
+            location_longitude = user.location_rel.longitude
+            location_latitude = user.location_rel.latitude
+        
         # Build and return ReadUserPersonalDetails DTO
         return ReadUserPersonalDetails(
             first_name=user.first_name,
             middle_name=user.middle_name,
             last_name=user.last_name,
             bio=user.bio,
-            location=None,  # Return null for now as per docstring
+            location_city=location_city,
+            location_state=location_state,
+            location_country=location_country,
+            location_longitude=location_longitude,
+            location_latitude=location_latitude,
             primary_email=links.primary_email if links else None,
             secondary_email=links.secondary_email if links else None,
             school_email=links.school_email if links else None,
@@ -367,13 +388,14 @@ class UserService:
         # Update user fields
         update_data = user_personal_details_update.dict(exclude_unset=True)
         
-        # Separate user fields from links fields
+        # Separate user fields, links fields, and location fields
         user_fields = {}
         links_fields = {}
+        location_fields = {}
         
         # Fields that belong to User table
         user_table_fields = {
-            'first_name', 'middle_name', 'last_name', 'bio', 'location',
+            'first_name', 'middle_name', 'last_name', 'bio',
             'dream_company', 'dream_company_logo', 'dream_position',
             'expected_salary_bucket', 'time_left', 'tools_to_learn',
             'primary_specialization', 'secondary_specializations'
@@ -385,12 +407,68 @@ class UserService:
             'portfolio_link', 'linkedin_user_name', 'leetcode_user_name'
         }
         
+        # Fields that belong to Location table
+        location_table_fields = {
+            'location_city', 'location_state', 'location_country', 
+            'location_longitude', 'location_latitude'
+        }
+        
         # Separate the fields
         for key, value in update_data.items():
             if key in user_table_fields:
                 user_fields[key] = value
             elif key in links_table_fields:
                 links_fields[key] = value
+            elif key in location_table_fields:
+                location_fields[key] = value
+        
+        # Handle location update if location fields are provided
+        if location_fields:
+            # Validate that required fields (city and country) are provided
+            if 'location_city' not in location_fields or 'location_country' not in location_fields:
+                raise ValueError("Both 'location_city' and 'location_country' are required when providing location information")
+            
+            if user.location:
+                # Update existing location
+                location_update_data = {
+                    'city': location_fields['location_city'],
+                    'country': location_fields['location_country'],
+                }
+                
+                # Add optional fields if provided
+                if 'location_state' in location_fields:
+                    location_update_data['state'] = location_fields['location_state']
+                if 'location_longitude' in location_fields:
+                    location_update_data['longitude'] = location_fields['location_longitude']
+                if 'location_latitude' in location_fields:
+                    location_update_data['latitude'] = location_fields['location_latitude']
+                
+                # Update existing location using LocationService
+                location_update = UpdateLocation(**location_update_data)
+                self.location_service.update_location(user.location, location_update)
+            else:
+                # Create new location if user doesn't have one
+                from Entities.UserDTOs.location_entity import CreateLocation
+                location_create_data = {
+                    'city': location_fields['location_city'],
+                    'country': location_fields['location_country'],
+                }
+                
+                # Add optional fields if provided
+                if 'location_state' in location_fields:
+                    location_create_data['state'] = location_fields['location_state']
+                if 'location_longitude' in location_fields:
+                    location_create_data['longitude'] = location_fields['location_longitude']
+                if 'location_latitude' in location_fields:
+                    location_create_data['latitude'] = location_fields['location_latitude']
+                
+                # Create new location using LocationService
+                location_create = CreateLocation(**location_create_data)
+                created_location = self.location_service.create_location(location_create)
+                
+                # Set user's location foreign key
+                user.location = created_location.id
+                user_fields['location'] = created_location.id
         
         # Update user if there are user fields to update
         if user_fields:

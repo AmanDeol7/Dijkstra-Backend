@@ -198,7 +198,11 @@ class ReadUserPersonalDetails(BaseModel):
     middle_name: Optional[str]
     last_name: Optional[str]
     bio: Optional[str]
-    location: Optional[UUID]  # Return null for now as per docstring
+    location_city: Optional[str]
+    location_state: Optional[str]
+    location_country: Optional[str]
+    location_longitude: Optional[float]
+    location_latitude: Optional[float]
     primary_email: Optional[str]
     secondary_email: Optional[str]
     school_email: Optional[str]
@@ -229,7 +233,11 @@ class UpdateUserPersonalDetails(BaseModel):
     middle_name: Optional[str] = None
     last_name: Optional[str] = None
     bio: Optional[str] = None
-    location: Optional[UUID] = None
+    location_city: Optional[str] = None
+    location_state: Optional[str] = None
+    location_country: Optional[str] = None
+    location_longitude: Optional[float] = None
+    location_latitude: Optional[float] = None
     primary_email: Optional[str] = None
     secondary_email: Optional[str] = None
     school_email: Optional[str] = None
