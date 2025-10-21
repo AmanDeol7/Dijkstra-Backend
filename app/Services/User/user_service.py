@@ -6,7 +6,7 @@ from sqlmodel import Session
 from Repository.User.user_repository import UserRepository
 from Repository.User.profile_repository import ProfileRepository
 from Repository.User.links_repository import LinksRepository
-from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails
+from Entities.UserDTOs.user_entity import CreateUser, ReadUserPersonalDetails, UpdateUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails, UpdateUserPersonalDetails
 from Schema.SQL.Models.models import User, Profile, Links
 from Utils.Exceptions.user_exceptions import GitHubUsernameAlreadyExists, GitHubUsernameNotFound, UserNotFound
 
@@ -282,6 +282,143 @@ class UserService:
             portfolio_link=links.portfolio_link if links else None,
             leetcode_link=links.leetcode_link if links else None,
         )
+
+    def get_user_personal_details_by_github_username(self, github_user_name: str) -> ReadUserPersonalDetails:
+        """
+        Get user personal details by GitHub username.
+        Returns user personal details including:
+        - First Name
+        - Middle name(s)
+        - Last name
+        - Bio
+        - Location (return null for now)
+        - Primary Email
+        - Secondary Email
+        - University Email
+        - Work Email
+        - Website/Portfolio Link
+        - GitHub Username
+        - LinkedIn Username
+        - Leetcode Username
+        - Dream Company        
+        - Dream Company Logo
+        - Dream Position
+        - Expected Salary Bucket
+        - Time Left
+        - Tools to Learn
+        """
+        # Get user by GitHub username
+        user = self.get_user_by_github_username(github_user_name)
+        
+        # Get associated links
+        links = None
+        try:
+            links = self.links_repo.get_by_user_id(user.id)
+        except:
+            # Links might not exist, continue with None
+            pass
+        
+        # Build and return ReadUserPersonalDetails DTO
+        return ReadUserPersonalDetails(
+            first_name=user.first_name,
+            middle_name=user.middle_name,
+            last_name=user.last_name,
+            bio=user.bio,
+            location=None,  # Return null for now as per docstring
+            primary_email=links.primary_email if links else None,
+            secondary_email=links.secondary_email if links else None,
+            school_email=links.school_email if links else None,
+            work_email=links.work_email if links else None,
+            portfolio_link=links.portfolio_link if links else None,
+            github_user_name=user.github_user_name,
+            linkedin_user_name=links.linkedin_user_name if links else None,
+            leetcode_user_name=links.leetcode_user_name if links else None,
+            dream_company=user.dream_company,
+            dream_company_logo=user.dream_company_logo,
+            dream_position=user.dream_position,
+            expected_salary_bucket=user.expected_salary_bucket,
+            time_left=user.time_left,
+            tools_to_learn=user.tools_to_learn,
+            primary_specialization=user.primary_specialization,
+            secondary_specializations=user.secondary_specializations,
+            rank=user.rank,
+            streak=user.streak,
+            onboarding_complete=user.onboarding_complete,
+            data_loaded=user.data_loaded,
+            onboarding_journey_completed=user.onboarding_journey_completed,
+        )
+
+    def update_user_personal_details_by_github_username(self, github_user_name: str, user_personal_details_update: UpdateUserPersonalDetails) -> ReadUserPersonalDetails:
+        """
+        Update user personal details by GitHub username.
+        Updates both User and Links tables with the provided personal details.
+        """
+        # Get user by GitHub username
+        user = self.get_user_by_github_username(github_user_name)
+        
+        # Get associated links
+        links = None
+        try:
+            links = self.links_repo.get_by_user_id(user.id)
+        except:
+            # Links might not exist, we'll create them if needed
+            pass
+        
+        # Update user fields
+        update_data = user_personal_details_update.dict(exclude_unset=True)
+        
+        # Separate user fields from links fields
+        user_fields = {}
+        links_fields = {}
+        
+        # Fields that belong to User table
+        user_table_fields = {
+            'first_name', 'middle_name', 'last_name', 'bio', 'location',
+            'dream_company', 'dream_company_logo', 'dream_position',
+            'expected_salary_bucket', 'time_left', 'tools_to_learn',
+            'primary_specialization', 'secondary_specializations'
+        }
+        
+        # Fields that belong to Links table
+        links_table_fields = {
+            'primary_email', 'secondary_email', 'school_email', 'work_email',
+            'portfolio_link', 'linkedin_user_name', 'leetcode_user_name'
+        }
+        
+        # Separate the fields
+        for key, value in update_data.items():
+            if key in user_table_fields:
+                user_fields[key] = value
+            elif key in links_table_fields:
+                links_fields[key] = value
+        
+        # Update user if there are user fields to update
+        if user_fields:
+            for key, value in user_fields.items():
+                setattr(user, key, value)
+            self.repo.update(user)
+        
+        # Update or create links if there are links fields to update
+        if links_fields:
+            if links:
+                # Update existing links
+                for key, value in links_fields.items():
+                    setattr(links, key, value)
+                self.links_repo.update(links)
+            else:
+                # Create new links record
+                links_data = {
+                    'user_id': user.id,
+                    'github_user_name': user.github_user_name,
+                    'github_link': f"https://github.com/{user.github_user_name}",
+                }
+                links_data.update(links_fields)
+                links = Links(**links_data)
+                self.links_repo.create(links)
+        
+        # Return updated personal details
+        return self.get_user_personal_details_by_github_username(github_user_name)
+        
 
     def update_user_by_github_username(self, github_username: str, user_update: UpdateUser) -> User:
         """

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from uuid import UUID
 from sqlmodel import Session
 
-from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, ReadUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails
+from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, ReadUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails, ReadUserPersonalDetails, UpdateUserPersonalDetails
 from Services.User.user_service import UserService
 from Settings.logging_config import setup_logging
 from db import get_session
@@ -119,6 +119,35 @@ def get_user_card_details_by_github_username(
     logger.info(f"User card details fetched successfully for GitHub username: {github_username}")
     return user_data
 
+@router.get("/personal-details/{github_username}", response_model=ReadUserPersonalDetails)
+def get_personal_details_by_github_username(
+    github_username: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Get user personal details by GitHub username.
+    """
+    service = UserService(session)
+    logger.info(f"Fetching User personal details with GitHub username: {github_username}")
+    user_data = service.get_user_personal_details_by_github_username(github_username)
+    logger.info(f"User personal details fetched successfully for GitHub username: {github_username}")
+    return user_data
+
+@router.put("/personal-details/{github_username}", response_model=ReadUserPersonalDetails)
+def update_user_personal_details_by_github_username(
+    github_username: str,
+    user_personal_details_update: UpdateUserPersonalDetails,
+    session: Session = Depends(get_session)
+):
+    """
+    Update user personal details by GitHub username.
+    Updates both User and Links tables with the provided personal details.
+    """
+    service = UserService(session)
+    logger.info(f"Updating User personal details with GitHub username: {github_username}")
+    user_data = service.update_user_personal_details_by_github_username(github_username, user_personal_details_update)
+    logger.info(f"User personal details updated successfully for GitHub username: {github_username}")
+    return user_data
 
 @router.get("/", response_model=List[ReadUser])
 def list_users(

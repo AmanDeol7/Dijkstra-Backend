@@ -192,5 +192,56 @@ class ReadUserCardDetails(BaseModel):
         from_attributes = True
 
 
-# Note: Extended DTOs (ReadUserFull) are in extended_entities.py
-# to avoid circular import issues
+class ReadUserPersonalDetails(BaseModel):
+    """User personal details including data from User and Links models"""
+    first_name: Optional[str]
+    middle_name: Optional[str]
+    last_name: Optional[str]
+    bio: Optional[str]
+    location: Optional[UUID]  # Return null for now as per docstring
+    primary_email: Optional[str]
+    secondary_email: Optional[str]
+    school_email: Optional[str]
+    work_email: Optional[str]
+    portfolio_link: Optional[str]
+    github_user_name: str
+    linkedin_user_name: Optional[str]
+    leetcode_user_name: Optional[str]
+    dream_company: Optional[str]
+    dream_company_logo: Optional[str]
+    dream_position: Optional[str]
+    expected_salary_bucket: Rank
+    time_left: int
+    tools_to_learn: Optional[List[Tools]]
+    primary_specialization: Domain
+    secondary_specializations: List[Domain]
+    rank: Rank
+    streak: Optional[int]
+    onboarding_complete: bool
+    data_loaded: bool
+    onboarding_journey_completed: bool
+
+    class Config:
+        from_attributes = True
+
+class UpdateUserPersonalDetails(BaseModel):
+    first_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    last_name: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[UUID] = None
+    primary_email: Optional[str] = None
+    secondary_email: Optional[str] = None
+    school_email: Optional[str] = None
+    work_email: Optional[str] = None
+    portfolio_link: Optional[str] = None
+    linkedin_user_name: Optional[str] = None
+    leetcode_user_name: Optional[str] = None
+    dream_company: Optional[str] = None
+    dream_company_logo: Optional[str] = None
+    dream_position: Optional[str] = None
+    expected_salary_bucket: Optional[Rank] = None
+    time_left: Optional[int] = None
+    tools_to_learn: Optional[List[Tools]] = None
+    primary_specialization: Optional[Domain] = None
+    secondary_specializations: Optional[List[Domain]] = None    
