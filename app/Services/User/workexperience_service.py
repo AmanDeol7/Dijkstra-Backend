@@ -37,8 +37,6 @@ class WorkExperienceService:
 
     def get_work_experiences_by_profile_id(self, profile_id: UUID) -> List[WorkExperience]:
         work_experiences = self.repo.get_by_profile_id(profile_id)
-        if not work_experiences:
-            raise WorkExperienceNotFound(profile_id)
         return work_experiences
 
     def list_work_experiences(

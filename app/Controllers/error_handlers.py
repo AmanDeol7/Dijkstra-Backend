@@ -125,7 +125,7 @@ def register_exception_handlers(app):
     async def work_experience_not_found_handler(request: Request, exc: WorkExperienceNotFound):
         logger.warning(f"Work experience not found: {exc.work_experience_id}")
         raise_api_error(
-            code=ErrorCodes.USER_WORK_EXPERIENCE_NF_A01,
+            code=ErrorCodes.USER_WORKEXP_NF_A01,
             error="Work experience not found",
             detail=str(exc),
             status=404
