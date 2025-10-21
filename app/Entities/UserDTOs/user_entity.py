@@ -168,5 +168,29 @@ class OnboardCheckResponse(BaseModel):
     user_id: Optional[UUID] = None
 
 
+# ----------------------
+# User Card Details DTO
+# ----------------------
+class ReadUserCardDetails(BaseModel):
+    """User card details including data from User and Links models"""
+    github_user_name: str
+    first_name: Optional[str]
+    middle_name: Optional[str]
+    last_name: Optional[str]
+    bio: Optional[str]
+    rank: Rank
+    streak: Optional[int]
+    primary_specialization: Domain
+    secondary_specializations: List[Domain]
+    expected_salary_bucket: Rank
+    time_left: int
+    linkedin_link: Optional[str]
+    portfolio_link: Optional[str]
+    leetcode_link: Optional[str]
+
+    class Config:
+        from_attributes = True
+
+
 # Note: Extended DTOs (ReadUserFull) are in extended_entities.py
 # to avoid circular import issues

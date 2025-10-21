@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Query
 from uuid import UUID
 from sqlmodel import Session
 
-from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, ReadUser, OnboardUser, OnboardCheckResponse
+from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, ReadUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails
 from Services.User.user_service import UserService
 from Settings.logging_config import setup_logging
 from db import get_session
@@ -27,17 +27,11 @@ def create_user(user_create: CreateUser, session: Session = Depends(get_session)
 @router.get("/onboard", response_model=OnboardCheckResponse)
 def check_onboarding(
     username: str = Query(..., description="GitHub username to check"),
-    check: bool = Query(False, description="Check onboarding status"),
     session: Session = Depends(get_session)
 ):
     """
     Check if a user has completed onboarding by GitHub username.
-    Use ?check=true to activate this endpoint.
-    """
-    if not check:
-        logger.warning("Onboard check endpoint called without check=true parameter")
-        return OnboardCheckResponse(onboarded=False, user_id=None)
-    
+    """    
     service = UserService(session)
     logger.info(f"Checking onboarding status for GitHub username: {username}")
     result = service.check_onboarding_status(username)
@@ -55,6 +49,8 @@ def onboard_user(onboard_data: OnboardUser, session: Session = Depends(get_sessi
     user = service.onboard_user(onboard_data)
     logger.info(f"Successfully onboarded User with ID: {user.id}")
     return user
+
+# TODO: Create an update endpoint for completing onboarding
 
 
 @router.get("/id/{user_id}")
@@ -108,6 +104,20 @@ def get_user_by_github_username(
     else:
         user = service.get_user_by_github_username(github_username)
         return user
+
+@router.get("/card/{github_username}", response_model=ReadUserCardDetails)
+def get_user_card_details_by_github_username(
+    github_username: str,
+    session: Session = Depends(get_session)
+):
+    """
+    Get user card details by GitHub username.
+    """
+    service = UserService(session)
+    logger.info(f"Fetching User card details with GitHub username: {github_username}")
+    user_data = service.get_user_card_details_by_github_username(github_username)
+    logger.info(f"User card details fetched successfully for GitHub username: {github_username}")
+    return user_data
 
 
 @router.get("/", response_model=List[ReadUser])

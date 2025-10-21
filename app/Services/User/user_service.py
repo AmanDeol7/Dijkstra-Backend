@@ -6,7 +6,7 @@ from sqlmodel import Session
 from Repository.User.user_repository import UserRepository
 from Repository.User.profile_repository import ProfileRepository
 from Repository.User.links_repository import LinksRepository
-from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, OnboardUser, OnboardCheckResponse
+from Entities.UserDTOs.user_entity import CreateUser, UpdateUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails
 from Schema.SQL.Models.models import User, Profile, Links
 from Utils.Exceptions.user_exceptions import GitHubUsernameAlreadyExists, GitHubUsernameNotFound, UserNotFound
 
@@ -30,19 +30,19 @@ class UserService:
     def get_user(self, user_id: UUID) -> Optional[User]:
         user = self.repo.get(user_id)
         if not user:
-            return UserNotFound(user_id)
+            raise UserNotFound(user_id)
         return user
 
     def get_user_by_github_username(self, github_user_name: str) -> Optional[User]:
         user = self.repo.get_by_github_username(github_user_name)
         if not user:
-            return GitHubUsernameNotFound(github_user_name)
+            raise GitHubUsernameNotFound(github_user_name)
         return user
 
     def get_user_id_by_github_username(self, github_user_name: str) -> Optional[UUID]:
         user = self.repo.get_by_github_username(github_user_name)
         if not user:
-            return GitHubUsernameNotFound(github_user_name)
+            raise GitHubUsernameNotFound(github_user_name)
         return user.id
 
     def list_users(
@@ -146,7 +146,7 @@ class UserService:
                 github_user_name=onboard_data.github_user_name,
                 github_link=f"https://github.com/{onboard_data.github_user_name}",
                 linkedin_user_name=onboard_data.linkedin_user_name,
-                linkedin_link=None,
+                linkedin_link=f"https://www.linkedin.com/in/{onboard_data.linkedin_user_name}",
                 leetcode_user_name=onboard_data.leetcode_user_name,
                 leetcode_link=f"https://leetcode.com/u/{onboard_data.leetcode_user_name}",
                 primary_email=onboard_data.primary_email,
@@ -234,6 +234,54 @@ class UserService:
             user_dict['profile'] = None
         
         return user_dict
+
+    def get_user_card_details_by_github_username(self, github_user_name: str) -> ReadUserCardDetails:
+        """
+        Get user card details by GitHub username.
+        Returns user card details including:
+        - GitHub username
+        - First name
+        - Middle name
+        - Last name
+        - Bio
+        - Rank
+        - Streak
+        - Primary specialization
+        - Secondary specializations
+        - Expected salary bucket
+        - LinkedIn Link
+        - Personal Website Link
+        - Leetcode Link
+        - Time Left
+        """
+        # Get user by GitHub username
+        user = self.get_user_by_github_username(github_user_name)
+        
+        # Get associated links
+        links = None
+        try:
+            links = self.links_repo.get_by_user_id(user.id)
+        except:
+            # Links might not exist, continue with None
+            pass
+        
+        # Build and return ReadUserCardDetails DTO
+        return ReadUserCardDetails(
+            github_user_name=user.github_user_name,
+            first_name=user.first_name,
+            middle_name=user.middle_name,
+            last_name=user.last_name,
+            bio=user.bio,
+            rank=user.rank,
+            streak=user.streak,
+            primary_specialization=user.primary_specialization,
+            secondary_specializations=user.secondary_specializations,
+            expected_salary_bucket=user.expected_salary_bucket,
+            time_left=user.time_left,
+            linkedin_link=links.linkedin_link if links else None,
+            portfolio_link=links.portfolio_link if links else None,
+            leetcode_link=links.leetcode_link if links else None,
+        )
 
     def update_user_by_github_username(self, github_username: str, user_update: UpdateUser) -> User:
         """
