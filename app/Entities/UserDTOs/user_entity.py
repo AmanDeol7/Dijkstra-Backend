@@ -253,3 +253,11 @@ class UpdateUserPersonalDetails(BaseModel):
     tools_to_learn: Optional[List[Tools]] = None
     primary_specialization: Optional[Domain] = None
     secondary_specializations: Optional[List[Domain]] = None    
+
+# ----------------------
+# User Auth Details DTO
+# ----------------------
+class ReadUserAuthDetails(BaseModel):
+    github_user_name: str
+    user_id: UUID
+    profile_id: UUID

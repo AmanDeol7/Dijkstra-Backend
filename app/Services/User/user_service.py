@@ -7,9 +7,9 @@ from Repository.User.user_repository import UserRepository
 from Repository.User.profile_repository import ProfileRepository
 from Repository.User.links_repository import LinksRepository
 from Services.User.location_service import LocationService
-from Entities.UserDTOs.user_entity import CreateUser, ReadUserPersonalDetails, UpdateUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails, UpdateUserPersonalDetails
+from Entities.UserDTOs.user_entity import CreateUser, ReadUserAuthDetails, ReadUserPersonalDetails, UpdateUser, OnboardUser, OnboardCheckResponse, ReadUserCardDetails, UpdateUserPersonalDetails
 from Schema.SQL.Models.models import User, Profile, Links, Location
-from Utils.Exceptions.user_exceptions import GitHubUsernameAlreadyExists, GitHubUsernameNotFound, UserNotFound
+from Utils.Exceptions.user_exceptions import GitHubUsernameAlreadyExists, GitHubUsernameNotFound, ProfileNotFound, UserNotFound
 from Entities.UserDTOs.location_entity import UpdateLocation, CreateLocation
 
 
@@ -368,6 +368,20 @@ class UserService:
             data_loaded=user.data_loaded,
             onboarding_journey_completed=user.onboarding_journey_completed,
         )
+
+    def get_user_auth_details_by_github_username(self, github_user_name: str) -> ReadUserAuthDetails:
+        """
+        Get user auth details by GitHub username.
+        Returns user auth details including:
+        - GitHub username
+        - User ID
+        - Profile ID
+        """
+        user = self.get_user_by_github_username(github_user_name)
+        profile = self.profile_repo.get_by_user_id(user.id)
+        if not profile:
+            raise ProfileNotFound(user.id)
+        return ReadUserAuthDetails(github_user_name=user.github_user_name, user_id=user.id, profile_id=profile.id)
 
     def update_user_personal_details_by_github_username(self, github_user_name: str, user_personal_details_update: UpdateUserPersonalDetails) -> ReadUserPersonalDetails:
         """
