@@ -145,6 +145,13 @@ class EducationService:
         self.repo.delete(education)
         return f"Education {education_id} deleted successfully"
 
+    def get_educations_by_profile_with_locations(self, profile_id: UUID) -> List[ReadEducation]:
+        """
+        Get all educations for a profile with their associated locations populated.
+        Returns empty list if no educations found.
+        """
+        return self.get_educations_by_profile(profile_id)
+
     def get_educations_by_github_username(self, github_username: str) -> List[ReadEducation]:
         """Get all educations by GitHub username"""
         from Services.User.profile_service import ProfileService
