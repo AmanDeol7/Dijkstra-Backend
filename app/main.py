@@ -25,8 +25,8 @@ app = FastAPI()
 
 allowed_origins = [
     "http://localhost:3000",
-    "https://platform.dijkstra.com",
-    "https://platform.qa.dijkstra.com",
+    "https://platform.dijkstra.org.in",
+    "https://platform.qa.dijkstra.org.in",
 ]
 
 # Add CORS middleware
