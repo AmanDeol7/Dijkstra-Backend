@@ -4,7 +4,8 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 class CreateLocation(BaseModel):
-    city: Annotated[str, Field(min_length=1, strip_whitespace=True)]
+    id: Optional[UUID] = None
+    city: str
     state: Optional[str] = None
     country: Annotated[str, Field(min_length=1, strip_whitespace=True)]
     longitude: Optional[float] = None

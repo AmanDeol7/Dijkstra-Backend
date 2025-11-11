@@ -1,4 +1,5 @@
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from Settings.logging_config import setup_logging
 from Controllers import main_controller
 from Controllers.Opportunities import job_controller
@@ -21,6 +22,21 @@ from Controllers.User import location_controller
 from Controllers.error_handlers import register_exception_handlers
 from db import init_db
 app = FastAPI()
+
+allowed_origins = [
+    "http://localhost:3000",
+    "https://platform.dijkstra.org.in",
+    "https://platform.qa.dijkstra.org.in",
+]
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=allowed_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"],
+)
 
 # Initialize logging
 logger = setup_logging()
