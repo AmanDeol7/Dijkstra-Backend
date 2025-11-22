@@ -93,3 +93,12 @@ class PublicationNotFound(ServiceError):
     def __init__(self, publication_id):
         super().__init__(f"Publication with ID {publication_id} does not exist.")
         self.publication_id = publication_id
+
+class TestScoreNotFound(ServiceError):
+    def __init__(self, test_score_id=None):
+        if test_score_id is None:
+            message = "No test scores found."
+        else:
+            message = f"Test score with ID '{test_score_id}' does not exist."
+        super().__init__(message)
+        self.test_score_id = test_score_id
